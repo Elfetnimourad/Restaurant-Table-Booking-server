@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs")
 
 const getAllUsers = async(req,res)=>{
     try{
-       pool.query("SELECT * FROM users",[],(error,results)=>{
+       pool.query("SELECT b.user_id,u.name,u.email,b.id,b.booking_date,b.booking_time,b.status FROM users u LEFT JOIN bookings b ON b.user_id = u.id",[],(error,results)=>{
 console.log(results)
         if(!results.rows.length){
             res.status(404).json("No Users")

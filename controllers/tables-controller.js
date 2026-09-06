@@ -2,7 +2,9 @@ const pool = require("../config/db")
 
 const getAllTables = async(req,res) =>{
     try{
-        pool.query("SELECT * FROM tables",[],(error,results)=>{
+        pool
+        .query("SELECT b.user_id,t.table_number,t.capacity,b.booking_date,b.booking_time,b.status FROM tables t LEFT JOIN bookings b ON t.id = b.table_id",
+            [],(error,results)=>{
             if(!results.rows.length)console.log(error);
             const tables = results.rows;
             res.status(200).json(tables)
