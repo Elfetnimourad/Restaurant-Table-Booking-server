@@ -1,82 +1,191 @@
 const pool = require("../config/db");
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs")
+const bcrypt = require("bcryptjs");
 
-const getAllUsers = async(req,res)=>{
-    try{
-       pool.query("SELECT b.user_id,u.name,u.email,b.id,b.booking_date,b.booking_time,b.status FROM users u LEFT JOIN bookings b ON b.user_id = u.id",[],(error,results)=>{
-console.log(results)
-        if(!results.rows.length){
-            res.status(404).json("No Users")
-        }
-        return res.status(201).json(results.rows)
-       })
-    }catch(error){
-        res.status(400).json(error)
+
+/*
+|--------------------------------------------------------------------------
+| GET ALL USERS
+|--------------------------------------------------------------------------
+*/
+const getAllUsers = async (req, res, next) => {
+    try {
+        pool.query(
+            `
+            SELECT
+                b.user_id,
+                u.name,
+                u.email,
+                b.id,
+                b.booking_date,
+                b.booking_time,
+                b.status
+            FROM users u
+            LEFT JOIN bookings b
+                ON b.user_id = u.id
+            `,
+            [],
+            (error, results) => {
+
+                // Database error
+                if (error) {
+                    return next(error);
+                }
+
+                // No users found
+                if (!results.rows.length) {
+                    const error = new Error("No users found");
+                    error.statusCode = 404;
+
+                    return next(error);
+                }
+
+                return res.status(200).json(results.rows);
+            }
+        );
+
+    } catch (error) {
+        next(error);
     }
+};
 
-}
 
+/*
+|--------------------------------------------------------------------------
+| REGISTER
+|--------------------------------------------------------------------------
+*/
+const register = async (req, res, next) => {
+    try {
+        const { name, email, password } = req.body;
 
-const register = async (req, res) => {
-    try{
-     const {name, email,password}  = req.body;
-     const hashedPassword = await bcrypt.hash(password,10);
-        pool.query("SELECT s From users s WHERE s.email = $1",[email],(error,results)=>{
-         if(results.rows.length){
-            res.status(400).json("You Already Registered")
-        }
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-     pool.query("INSERT INTO users ( name, email, password) VALUES ($1, $2, $3) RETURNING *",[name,email,hashedPassword],(error,results)=>{
-        if(error)console.log(error);
-       const user = results.rows;
-        console.log(results.rows[0])
-        const token = jwt.sign({name:user[0].name,email:user[0].email},process.env.SECRET_PRIVATE_KEY)
-       return res.status(201).json({message:"User registered successfully",token});
-     })
-     
-       })
-     }catch(error){
-        console.error(error);
-        res.status(500).json({message:"Internal server error"});
-     }
-}
-const login = async(req,res)=>{
-    try{
-        const {email,password} = req.body;
-             
+        pool.query(
+            "SELECT * FROM users WHERE email = $1",
+            [email],
+            (error, results) => {
 
-         pool.query("SELECT * From users WHERE email = $1",[email],async(error,results)=>{
-           if(!results.rows.length){
-            res.status(400).json("User Not Found")
-        }
-        console.log("results",results.rows[0].password)
-const comparedPassword = await bcrypt.compare(password,results.rows[0].password);
+                // Database error
+                if (error) {
+                    return next(error);
+                }
 
-const user = results.rows;
-console.log("headers",req.headers);
-console.log("user",user)
-if(comparedPassword){
+                // User already exists
+                if (results.rows.length) {
+                    const error = new Error("You are already registered");
+                    error.statusCode = 400;
 
- return res.status(200).json(user);
-}
-if(comparedPassword && user){
-    const decodedToken = await jwt.sign({name:user[0].name,email:user[0].email},process.env.SECRET_PRIVATE_KEY);
-    console.log("decodedToken",decodedToken)
-    res.status(200).json(decodedToken)
-}else{
-    res.status(404).json("not found")
-}
+                    return next(error);
+                }
 
-        
-         })
-    }catch(error){
-        res.status(404).json(error.message)
+                pool.query(
+                    `
+                    INSERT INTO users (name, email, password)
+                    VALUES ($1, $2, $3)
+                    RETURNING *
+                    `,
+                    [name, email, hashedPassword],
+                    (error, results) => {
+
+                        // Database error
+                        if (error) {
+                            return next(error);
+                        }
+
+                        const user = results.rows[0];
+
+                        const token = jwt.sign(
+                            {
+                                id: user.id,
+                                name: user.name,
+                                email: user.email
+                            },
+                            process.env.SECRET_PRIVATE_KEY
+                        );
+
+                        return res.status(201).json({
+                            message: "User registered successfully",
+                            token
+                        });
+                    }
+                );
+            }
+        );
+
+    } catch (error) {
+        next(error);
     }
-}
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| LOGIN
+|--------------------------------------------------------------------------
+*/
+const login = async (req, res, next) => {
+    try {
+        const { email, password } = req.body;
+
+        pool.query(
+            "SELECT * FROM users WHERE email = $1",
+            [email],
+            async (error, results) => {
+
+                // Database error
+                if (error) {
+                    return next(error);
+                }
+
+                // User doesn't exist
+                if (!results.rows.length) {
+                    const error = new Error("Invalid email or password");
+                    error.statusCode = 401;
+
+                    return next(error);
+                }
+
+                const user = results.rows[0];
+
+                const comparedPassword = await bcrypt.compare(
+                    password,
+                    user.password
+                );
+
+                // Password doesn't match
+                if (!comparedPassword) {
+                    const error = new Error("Invalid email or password");
+                    error.statusCode = 401;
+
+                    return next(error);
+                }
+
+                // Create JWT
+                const token = jwt.sign(
+                    {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email
+                    },
+                    process.env.SECRET_PRIVATE_KEY
+                );
+
+                return res.status(200).json({
+                    message: "Login successful",
+                    token
+                });
+            }
+        );
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 
 module.exports = {
     register,
     login,
     getAllUsers
-}
+};
