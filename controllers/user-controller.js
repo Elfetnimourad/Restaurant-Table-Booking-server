@@ -99,7 +99,8 @@ const register = async (req, res, next) => {
                             {
                                 id: user.id,
                                 name: user.name,
-                                email: user.email
+                                email: user.email,
+                                role:user.role,
                             },
                             process.env.SECRET_PRIVATE_KEY
                         );
@@ -147,7 +148,7 @@ const login = async (req, res, next) => {
                 }
 
                 const user = results.rows[0];
-
+console.log("user",user.role)
                 const comparedPassword = await bcrypt.compare(
                     password,
                     user.password
@@ -166,14 +167,16 @@ const login = async (req, res, next) => {
                     {
                         id: user.id,
                         name: user.name,
-                        email: user.email
+                        email: user.email,
+                        role:user.role,
                     },
                     process.env.SECRET_PRIVATE_KEY
                 );
-
+// console.log("token",jwt.verify(token,process.env.SECRET_PRIVATE_KEY))
                 return res.status(200).json({
                     message: "Login successful",
-                    token
+                    token,
+                    user
                 });
             }
         );

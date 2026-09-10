@@ -60,7 +60,7 @@ const getAllTables = async (req, res) => {
  * - capacity
  * - location
  */
-const addTable = async (req, res) => {
+const addTable = async (req, res,next) => {
     try {
         const {
             table_number,
@@ -116,7 +116,7 @@ const addTable = async (req, res) => {
  *     tableId: "5"
  * }
  */
-const getSingleTable = async (req, res) => {
+const getSingleTable = async (req, res,next) => {
     try {
         const { tableId } = req.params;
 
@@ -137,9 +137,10 @@ const getSingleTable = async (req, res) => {
                 }
 
                 if (!results.rows.length) {
-                    error.statusCode = 404;
-                     error.message = "This table does not exist"
-                     next(error)
+                      const error = new Error("This table does not exist")
+                error.statusCode = 404;
+                
+               return next(error)
                 }
 
                 const table = results.rows[0];
@@ -167,7 +168,7 @@ const getSingleTable = async (req, res) => {
  * - capacity
  * - location
  */
-const updateTable = async (req, res) => {
+const updateTable = async (req, res,next) => {
     try {
         const { tableId } = req.params;
 
@@ -195,9 +196,11 @@ const updateTable = async (req, res) => {
                 }
 
                 if (!results.rows.length) {
-                    error.statusCode = 404;
-                    error.message = "This table was not found"
-                    next(error)
+            
+                   const error = new Error("This table was not found")
+                error.statusCode = 404;
+                
+               return next(error)
                 }
 
                 // Table exists → update it
@@ -253,7 +256,7 @@ const updateTable = async (req, res) => {
  *
  * Delete a restaurant table by ID.
  */
-const deleteTable = async (req, res) => {
+const deleteTable = async (req, res,next) => {
     try {
         const { tableId } = req.params;
 
@@ -274,9 +277,11 @@ const deleteTable = async (req, res) => {
                 }
 
                 if (!results.rows.length) {
-                     error.statusCode = 404;
-                     error.message = "This table was not found"
-                     next(error)
+    
+                       const error = new Error("This table was not found")
+                error.statusCode = 404;
+                
+               return next(error)
                 }
 
                 const deletedTable = results.rows[0];

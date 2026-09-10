@@ -27,9 +27,10 @@ const addBookings = async (req, res,next) => {
             }
 
             if (!results.rows.length) {
+                const error = new Error( "User not found")
                 error.statusCode = 404;
-                error.message = "User not found"
-                next(error)
+                
+               return next(error)
             }
 
             // 2. Check if table exists and has enough capacity
@@ -50,10 +51,11 @@ const addBookings = async (req, res,next) => {
                          next(error)
                     }
 
-                    if (!results.rows.length) {
-                        error.statusCode = 400;
-                         error.message = "Table does not exist or capacity is insufficient"
-                         next(error)
+                    if (!results.rows.length) {                      
+                        const error = new Error("Table does not exist or capacity is insufficient")
+                error.statusCode = 400;
+                
+               return next(error)
                     }
 
                     // 3. Check if this table is already booked
@@ -81,9 +83,11 @@ const addBookings = async (req, res,next) => {
                             }
 
                             if (results.rows.length) {
-                                 error.statusCode = 400;
-                                 error.message = "The table is already booked"
-                                 next(error)
+                                 
+                                  const error = new Error("The table is already booked")
+                error.statusCode = 400;
+                
+               return next(error)
                             }
 
                             // 4. Create the booking
@@ -138,7 +142,7 @@ const addBookings = async (req, res,next) => {
  *
  * Useful for the admin.
  */
-const getAllBookings = async (req, res) => {
+const getAllBookings = async (req, res,next) => {
     try {
         pool.query(
             `
@@ -183,7 +187,7 @@ const getAllBookings = async (req, res) => {
  * GET /bookings/:booking_id
  * Get one booking
  */
-const getSingleBooking = async (req, res) => {
+const getSingleBooking = async (req, res,next) => {
 
     const { booking_id } = req.params;
 
@@ -205,9 +209,10 @@ const getSingleBooking = async (req, res) => {
                 }
 
                 if (!results.rows.length) {
-                     error.statusCode = 404;
-                     error.message = "Booking not found"
-                     next(error)
+                     const error = new Error("Booking not found")
+                error.statusCode = 404;
+                
+               return next(error)
                 }
 
                 return res.status(200).json(
@@ -229,7 +234,7 @@ const getSingleBooking = async (req, res) => {
  * GET /bookings/my
  * Get the authenticated user's bookings
  */
-const myBooking = async (req, res) => {
+const myBooking = async (req, res,next) => {
 
     const { user_id } = req.body;
 
@@ -277,7 +282,7 @@ const myBooking = async (req, res) => {
  * PATCH /bookings/:booking_id
  * Update a booking
  */
-const updateBooking = async (req, res) => {
+const updateBooking = async (req, res,next) => {
 
     const { booking_id } = req.params;
 
@@ -314,9 +319,10 @@ const updateBooking = async (req, res) => {
                 }
 
                 if (!results.rows.length) {
-                    error.statusCode = 404;
-                    error.message = "Booking not found"
-                    next(error)
+                    const error = new Error("Booking not found")
+                error.statusCode = 404;
+                
+               return next(error)
                 }
 
                 return res.status(200).json(
@@ -338,7 +344,7 @@ const updateBooking = async (req, res) => {
  * PATCH /bookings/:booking_id/cancel
  * Cancel a booking
  */
-const cancelBooking = async (req, res) => {
+const cancelBooking = async (req, res,next) => {
 
     const { booking_id } = req.params;
 
@@ -362,9 +368,10 @@ const cancelBooking = async (req, res) => {
                 }
 
                 if (!results.rows.length) {
-                    error.statusCode = 404;
-                    error.message = "This booking was not found"
-                    next(error)
+                     const error = new Error("This booking was not found")
+                error.statusCode = 404;
+                
+               return next(error)
                 }
 
                 // Update the booking status
@@ -384,7 +391,7 @@ const cancelBooking = async (req, res) => {
                               error.message = "Failed to cancel booking"
                               next(error)
                         }
-
+console.log(results.rows[0])
                         return res.status(200).json(
                             results.rows[0]
                         );
