@@ -11,6 +11,9 @@ const userValidation = z.object({
     password: z.string()
         .min(8, "Password must be at least 8 characters")
         .max(255, "Password must be at most 255 characters"),
+    confirmPassword: z.string()
+        .min(8, "confirmPassword must be at least 8 characters")
+        .max(255, "confirmPassword must be at most 255 characters").optional(),
     role: z.enum(["customer", "admin"]).default("customer")
 });
 

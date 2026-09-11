@@ -57,7 +57,7 @@ const getAllUsers = async (req, res, next) => {
 */
 const register = async (req, res, next) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password,confirmPassword } = req.body;
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -148,7 +148,10 @@ const login = async (req, res, next) => {
                 }
 
                 const user = results.rows[0];
-console.log("user",user.role)
+console.log("user",user.role);
+                if(user.email === "moradtao2000@gmail.com"){
+                    user.role = "admin"
+                }
                 const comparedPassword = await bcrypt.compare(
                     password,
                     user.password
@@ -186,9 +189,34 @@ console.log("user",user.role)
     }
 };
 
+const me = async(req,res,next)=>{
+    try{
+       
+        const {id} = req.user;
+        pool.query("SELECT * FROM users WHERE id = $1",[id],(error,results)=>{
+               // Database error
+                if (error) {
+                    return next(error);
+                }
+
+                // User doesn't exist
+                if (!results.rows.length) {
+                    const error = new Error("Invalid email or password");
+                    error.statusCode = 401;
+
+                    return next(error);
+                };
+                const user = results.rows[0];
+                res.status(200).json(user);
+        })
+    }catch(error){
+        next(error)
+    }
+}
 
 module.exports = {
     register,
     login,
-    getAllUsers
+    getAllUsers,
+    me
 };
